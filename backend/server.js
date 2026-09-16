@@ -4,6 +4,10 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
+const tripRoutes = require('./routes/tripRoutes');
+const destinationRoutes = require('./routes/destinationRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 // Connect to Database
 connectDB();
@@ -12,7 +16,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // Vite development ports
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000'],
   credentials: true
 }));
 app.use(express.json());
@@ -29,6 +33,10 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/trips', tripRoutes);
+app.use('/api/destinations', destinationRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Base route for API check
 app.get('/', (req, res) => {
