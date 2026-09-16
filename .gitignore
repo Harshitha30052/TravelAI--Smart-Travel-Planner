@@ -2,3 +2,9 @@ node_modules/
 .env
 *.log
 dist/
+ml/data/travel_budget_dataset.csv
+
+ml/models/*.joblib
+ml/models/*.pkl
+ml/models/*.h5
+ml/models/*.json
