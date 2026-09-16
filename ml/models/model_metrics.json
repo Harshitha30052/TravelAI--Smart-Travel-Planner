@@ -1,0 +1,22 @@
+{
+  "model_type": "RandomForestRegressor",
+  "r2_score": 0.9384,
+  "mean_absolute_error": 73800.23,
+  "root_mean_squared_error": 135246.98,
+  "mean_absolute_percentage_error": "17.59%",
+  "train_samples": 4800,
+  "test_samples": 1200,
+  "categorical_features": [
+    "destination",
+    "transportation",
+    "season",
+    "food_preference",
+    "travel_style"
+  ],
+  "numeric_features": [
+    "duration_days",
+    "travelers",
+    "hotel_rating",
+    "activities_count"
+  ]
+}
