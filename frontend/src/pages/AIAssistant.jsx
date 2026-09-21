@@ -9,6 +9,7 @@ import BudgetCard from '../components/cards/BudgetCard';
 import DayByDayItineraryCard from '../components/cards/DayByDayItineraryCard';
 import PackingCard from '../components/cards/PackingCard';
 import ActionButtonsBar from '../components/cards/ActionButtonsBar';
+import RecommendationsCard from '../components/cards/RecommendationsCard';
 import { 
   Send, 
   Sparkles, 
@@ -45,6 +46,7 @@ const AIAssistant = () => {
   const messagesEndRef = useRef(null);
 
   const quickPills = [
+    'Recommend destinations for me',
     'Plan a 5-day Goa trip for 2 people under ₹40,000',
     'Remove the museum on day 2.',
     'Replace it with an adventure activity under ₹1,500.',
@@ -185,28 +187,66 @@ const AIAssistant = () => {
               </div>
             </div>
 
-            {currentTrip && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 600 }}>
-                  📍 {currentTrip.destination} ({currentTrip.durationDays}D)
-                </span>
-                <button
-                  onClick={() => setFullItineraryModal(true)}
-                  style={{
-                    background: 'rgba(6, 182, 212, 0.15)',
-                    border: '1px solid rgba(6, 182, 212, 0.3)',
-                    color: '#38bdf8',
-                    padding: '5px 12px',
-                    borderRadius: '8px',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Itinerary View
-                </button>
-              </div>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {user && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '20px',
+                  padding: '4px 12px',
+                  fontSize: '0.78rem',
+                  color: '#cbd5e1'
+                }}>
+                  <span style={{ color: '#38bdf8', fontWeight: 600 }}>👤 {user.name}</span>
+                  <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>•</span>
+                  <span>{user.preferences?.travelStyle || 'Moderate'}</span>
+                  <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>•</span>
+                  <span>{user.preferences?.foodPreference || 'Any Food'}</span>
+                  <button
+                    onClick={() => navigate('/profile')}
+                    title="Edit Preferences in Profile"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#06b6d4',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      textDecoration: 'underline',
+                      padding: 0,
+                      marginLeft: '2px'
+                    }}
+                  >
+                    Edit
+                  </button>
+                </div>
+              )}
+
+              {currentTrip && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 600 }}>
+                    📍 {currentTrip.destination} ({currentTrip.durationDays}D)
+                  </span>
+                  <button
+                    onClick={() => setFullItineraryModal(true)}
+                    style={{
+                      background: 'rgba(6, 182, 212, 0.15)',
+                      border: '1px solid rgba(6, 182, 212, 0.3)',
+                      color: '#38bdf8',
+                      padding: '5px 12px',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Itinerary View
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Messages Area */}
@@ -271,7 +311,15 @@ const AIAssistant = () => {
 
                     {/* Rich Cards Section if Assistant returned structured travel payload */}
                     {!isUser && msg.richData && (
-                      <div style={{ marginTop: '1rem', width: '100%' }}>
+                      <div style={{ marginTop: '0.85rem', width: '100%' }}>
+                        {/* 0. Destination Recommendations Card */}
+                        {(msg.richData.cardType === 'DESTINATION_RECOMMENDATIONS' || msg.richData.recommendations) && (
+                          <RecommendationsCard
+                            recommendations={msg.richData.recommendations}
+                            onSelectDestination={(prompt) => sendMessage(prompt)}
+                          />
+                        )}
+
                         {/* 1. Trip Overview Card */}
                         {msg.richData.trip && (
                           <TripOverviewCard trip={msg.richData.trip} />
@@ -310,6 +358,44 @@ const AIAssistant = () => {
                             }}
                             onViewItineraryClick={() => setFullItineraryModal(true)}
                           />
+                        )}
+
+                        {/* 7. Suggested Quick Prompts Pills (from Greeting, Clarify, Help) */}
+                        {msg.richData.suggestions && Array.isArray(msg.richData.suggestions) && (
+                          <div style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '8px',
+                            marginTop: '0.75rem'
+                          }}>
+                            {msg.richData.suggestions.map((sug, sIdx) => (
+                              <button
+                                key={sIdx}
+                                onClick={() => sendMessage(sug)}
+                                style={{
+                                  background: 'rgba(6, 182, 212, 0.12)',
+                                  border: '1px solid rgba(6, 182, 212, 0.3)',
+                                  color: '#38bdf8',
+                                  borderRadius: '16px',
+                                  padding: '6px 14px',
+                                  fontSize: '0.8rem',
+                                  cursor: 'pointer',
+                                  fontWeight: 500,
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = 'rgba(6, 182, 212, 0.25)';
+                                  e.target.style.borderColor = 'rgba(6, 182, 212, 0.6)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = 'rgba(6, 182, 212, 0.12)';
+                                  e.target.style.borderColor = 'rgba(6, 182, 212, 0.3)';
+                                }}
+                              >
+                                💡 {sug}
+                              </button>
+                            ))}
+                          </div>
                         )}
                       </div>
                     )}

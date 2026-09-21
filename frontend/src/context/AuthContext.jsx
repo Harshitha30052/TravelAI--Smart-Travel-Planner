@@ -55,6 +55,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updatePreferences = async (preferences) => {
+    const data = await updateUserPreferencesAPI(preferences, token);
+    setUser(prev => ({
+      ...prev,
+      preferences: data.preferences
+    }));
+    return data.preferences;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
@@ -62,7 +71,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updatePreferences }}>
       {children}
     </AuthContext.Provider>
   );

@@ -42,6 +42,17 @@ export const fetchUserProfileAPI = async (token) => {
   return data;
 };
 
+export const updateUserPreferencesAPI = async (preferences, token) => {
+  const res = await fetch(`${BASE_URL}/auth/preferences`, {
+    method: 'PUT',
+    headers: getHeaders(token),
+    body: JSON.stringify(preferences),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to update preferences');
+  return data;
+};
+
 // --- DESTINATIONS APIS ---
 export const fetchDestinationsAPI = async (category = null, search = null) => {
   const params = new URLSearchParams();

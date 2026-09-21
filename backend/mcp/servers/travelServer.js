@@ -172,6 +172,60 @@ const travelTools = {
       console.error('search_activities error:', error);
       return { destination, totalFound: 0, activities: [] };
     }
+  },
+
+  recommend_destinations: async ({ category = null, travelStyle = 'Moderate', interests = [] }) => {
+    try {
+      const query = {};
+      if (category && category !== 'All') {
+        query.category = new RegExp(`^${category}$`, 'i');
+      }
+
+      let destinations = await Destination.find(query);
+      if (!destinations || destinations.length === 0) {
+        destinations = await Destination.find();
+      }
+
+      // Rank destinations based on travel style and interests
+      const ranked = destinations.map(dest => {
+        let score = dest.rating || 4.5;
+        let matchReason = `Outstanding ${dest.category.toLowerCase()} getaway`;
+
+        if (travelStyle === 'Budget' && dest.avgCostPerDay <= 3500) {
+          score += 1.0;
+          matchReason = `Budget-friendly with average cost of ~₹${dest.avgCostPerDay}/day`;
+        } else if (travelStyle === 'Luxury' && dest.avgCostPerDay >= 4500) {
+          score += 1.0;
+          matchReason = `Premier luxury retreats and curated 5-star stays`;
+        }
+
+        if (interests.some(int => dest.category.toLowerCase().includes(int.toLowerCase()))) {
+          score += 1.5;
+          matchReason += ` matching your interest in ${dest.category}`;
+        }
+
+        return {
+          name: dest.name,
+          state: dest.state,
+          category: dest.category,
+          tagline: dest.tagline,
+          avgCostPerDay: dest.avgCostPerDay,
+          rating: dest.rating,
+          heroImage: dest.heroImage,
+          matchReason
+        };
+      });
+
+      ranked.sort((a, b) => b.score - a.score);
+
+      return {
+        success: true,
+        recommendations: ranked.slice(0, 4)
+      };
+    } catch (error) {
+      console.error('recommend_destinations error:', error);
+      return { success: false, recommendations: [] };
+    }
   }
 };
 

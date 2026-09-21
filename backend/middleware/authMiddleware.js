@@ -13,7 +13,7 @@ const protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
 
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'travel_ai_super_secret_jwt_key_2026');
 
       // Get user from the token (exclude password)
       req.user = await User.findById(decoded.id).select('-password');
@@ -43,7 +43,7 @@ const optionalAuth = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'travelai_secret_key');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'travel_ai_super_secret_jwt_key_2026');
       req.user = await User.findById(decoded.id).select('-password');
     } catch (error) {
       // Ignore invalid token for optional auth

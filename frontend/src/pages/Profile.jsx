@@ -16,18 +16,43 @@ import {
 } from 'lucide-react';
 
 const Profile = () => {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, updatePreferences } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [travelStyle, setTravelStyle] = useState('Moderate');
-  const [foodPreference, setFoodPreference] = useState('Non-Veg');
-  const [pace, setPace] = useState('Balanced');
+  const [travelStyle, setTravelStyle] = useState(() => user?.preferences?.travelStyle || 'Moderate');
+  const [foodPreference, setFoodPreference] = useState(() => user?.preferences?.foodPreference || 'Non-Veg');
+  const [pace, setPace] = useState(() => user?.preferences?.pace || 'Balanced');
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSavePreferences = (e) => {
+  // Sync state if user loads later
+  React.useEffect(() => {
+    if (user?.preferences) {
+      if (user.preferences.travelStyle) setTravelStyle(user.preferences.travelStyle);
+      if (user.preferences.foodPreference) setFoodPreference(user.preferences.foodPreference);
+      if (user.preferences.pace) setPace(user.preferences.pace);
+    }
+  }, [user]);
+
+  const handleSavePreferences = async (e) => {
     e.preventDefault();
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    setSaving(true);
+    try {
+      if (updatePreferences) {
+        await updatePreferences({
+          travelStyle,
+          foodPreference,
+          pace
+        });
+      }
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+    } catch (err) {
+      console.error('Failed to save preferences:', err);
+      alert('Failed to save preferences. Please ensure you are logged in.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleLogout = () => {

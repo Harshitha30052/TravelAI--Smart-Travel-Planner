@@ -28,15 +28,26 @@ const generateDayByDayItinerary = async ({
   const itinerary = [];
   const today = new Date();
 
-  // Pick suitable hotel
-  const hotelRating = preferences.hotelRating || 3;
+  // Pick suitable hotel based on travel style preference
+  let hotelRating = preferences.hotelRating;
+  if (!hotelRating) {
+    if (preferences.travelStyle === 'Luxury') hotelRating = 5;
+    else if (preferences.travelStyle === 'Budget') hotelRating = 2;
+    else hotelRating = 3;
+  }
+
   const hotelsRes = await travelTools.search_hotels({ destination, guests: travelers, starRating: hotelRating });
   const selectedHotel = (hotelsRes.hotels && hotelsRes.hotels[0]) || {
-    name: `${destination} Riverside Resort`,
+    name: preferences.travelStyle === 'Luxury' ? `${destination} Royal Grand Palace & Spa` :
+          preferences.travelStyle === 'Budget' ? `Zostel & Backpacker Stays ${destination}` :
+          `${destination} Riverside Resort`,
     rating: hotelRating,
-    pricePerNight: 3500,
+    pricePerNight: hotelRating >= 5 ? 14000 : (hotelRating <= 2 ? 1500 : 3500),
     location: 'Central Location'
   };
+
+  const isRelaxed = preferences.pace === 'Relaxed';
+  const foodPref = preferences.foodPreference || 'Non-Veg';
 
   for (let d = 1; d <= durationDays; d++) {
     const dayDate = new Date(today);
@@ -50,22 +61,21 @@ const generateDayByDayItinerary = async ({
     };
 
     const isRainDay = dayWeather.rainChance > 40;
-    const dayTheme = d === 1 ? 'Arrival & Coastal Welcome' :
-                     d === 2 ? (isRainDay ? 'Indoor Heritage & Culinary Discovery' : 'Scenic Forts & Coastal Heritage') :
-                     d === 3 ? (isRainDay ? 'Museums & Art Galleries' : 'Water Adventure & Beach Vibrance') :
+    const dayTheme = d === 1 ? 'Arrival & Welcome' :
+                     d === 2 ? (isRainDay ? 'Indoor Heritage & Culinary Discovery' : 'Scenic Highlights & Heritage') :
+                     d === 3 ? (isRainDay ? 'Museums & Art Galleries' : 'Adventure & Exploration') :
                      d === 4 ? 'Local Markets & Cultural Excursions' :
                      'Relaxation, Souvenirs & Departure';
 
-    // Pick 3-4 activities for the day
     const dayActivities = [];
 
-    // Morning Slot (09:30 AM)
+    // Slot 1: Morning Slot
     if (d === 1) {
       dayActivities.push({
         id: `act-${d}-1`,
-        time: '10:00 AM',
+        time: '10:30 AM',
         title: `Check-in at ${selectedHotel.name}`,
-        description: `Unpack, freshen up, and enjoy a welcoming tropical beverage.`,
+        description: `Unpack, freshen up, and enjoy welcoming amenities.`,
         location: selectedHotel.location || destination,
         category: 'relaxation',
         estimatedCost: 0,
@@ -76,7 +86,7 @@ const generateDayByDayItinerary = async ({
       const morningPlace = places[(d * 2) % places.length] || places[0];
       dayActivities.push({
         id: `act-${d}-1`,
-        time: '09:30 AM',
+        time: isRelaxed ? '10:30 AM' : '09:00 AM',
         title: morningPlace ? morningPlace.name : `${destination} Heritage Walk`,
         description: morningPlace ? morningPlace.description : `Morning cultural exploration.`,
         location: destination,
@@ -87,74 +97,94 @@ const generateDayByDayItinerary = async ({
       });
     }
 
-    // Afternoon Slot (01:30 PM)
-    if (d === 2) {
-      // Intentionally insert an attraction (e.g. Museum/Heritage) suitable for the demo scenario
+    // Slot 2: Afternoon (Skip on relaxed days to allow free leisure time)
+    if (!isRelaxed || d === 2 || d === 3) {
+      if (d === 2) {
+        dayActivities.push({
+          id: `act-${d}-2`,
+          time: '02:00 PM',
+          title: `${destination} State Heritage Museum`,
+          description: `Explore ancient artifacts, colonial sculptures, and historical relics.`,
+          location: `Central ${destination}`,
+          category: 'culture',
+          estimatedCost: 350,
+          isIndoor: true,
+          rating: 4.6
+        });
+      } else if (d === 3) {
+        const adv = activities[0] || { title: 'Island Scuba & Watersports Combo', cost: 1800 };
+        dayActivities.push({
+          id: `act-${d}-2`,
+          time: '02:00 PM',
+          title: adv.title,
+          description: `Thrilling activity adhering to your ${preferences.travelStyle || 'Moderate'} travel style.`,
+          location: destination,
+          category: 'adventure',
+          estimatedCost: adv.cost || 1400,
+          isIndoor: false,
+          rating: 4.9
+        });
+      } else {
+        const afternoonAct = activities[(d) % activities.length] || activities[0];
+        dayActivities.push({
+          id: `act-${d}-2`,
+          time: '02:30 PM',
+          title: afternoonAct ? afternoonAct.title : `${destination} City Excursion`,
+          description: `Immerse in the lively atmosphere and attractions.`,
+          location: destination,
+          category: afternoonAct ? afternoonAct.category.toLowerCase() : 'relaxation',
+          estimatedCost: afternoonAct ? afternoonAct.cost : 500,
+          isIndoor: isRainDay ? true : (afternoonAct ? afternoonAct.isIndoor : false),
+          rating: 4.5
+        });
+      }
+    }
+
+    // Slot 3: Evening Slot (Sunset / Sightseeing)
+    if (!isRelaxed || d % 2 === 1) {
+      const eveningPlace = places[(d * 2 + 1) % places.length] || places[1] || places[0];
       dayActivities.push({
-        id: `act-${d}-2`,
-        time: '02:00 PM',
-        title: `${destination} State Heritage Museum`,
-        description: `Explore ancient artifacts, colonial sculptures, and historical relics.`,
-        location: `Central ${destination}`,
-        category: 'culture',
-        estimatedCost: 350,
-        isIndoor: true,
-        rating: 4.6
-      });
-    } else if (d === 3) {
-      // Day 3 activity (e.g., Adventure activity)
-      const adv = activities[0] || { title: 'Island Scuba & Watersports Combo', cost: 1800 };
-      dayActivities.push({
-        id: `act-${d}-2`,
-        time: '01:30 PM',
-        title: adv.title,
-        description: `Thrilling adventure activity with professional safety gear.`,
+        id: `act-${d}-3`,
+        time: '05:30 PM',
+        title: `${eveningPlace ? eveningPlace.name : 'Scenic Sunset Lookout'}`,
+        description: `Catch the evening breeze, golden hour photography, and scenic vistas.`,
         location: destination,
-        category: 'adventure',
-        estimatedCost: adv.cost || 1500,
+        category: 'sightseeing',
+        estimatedCost: 100,
         isIndoor: false,
-        rating: 4.9
-      });
-    } else {
-      const afternoonAct = activities[(d) % activities.length] || activities[0];
-      dayActivities.push({
-        id: `act-${d}-2`,
-        time: '02:00 PM',
-        title: afternoonAct ? afternoonAct.title : `${destination} City Excursion`,
-        description: `Immerse in the lively atmosphere and attractions.`,
-        location: destination,
-        category: afternoonAct ? afternoonAct.category.toLowerCase() : 'relaxation',
-        estimatedCost: afternoonAct ? afternoonAct.cost : 600,
-        isIndoor: isRainDay ? true : (afternoonAct ? afternoonAct.isIndoor : false),
-        rating: 4.5
+        rating: 4.8
       });
     }
 
-    // Evening Slot (05:30 PM)
-    const eveningPlace = places[(d * 2 + 1) % places.length] || places[1] || places[0];
-    dayActivities.push({
-      id: `act-${d}-3`,
-      time: '05:30 PM',
-      title: `${eveningPlace ? eveningPlace.name : 'Sunset Viewpoint'} & Evening Stroll`,
-      description: `Catch the golden hour breeze and local street photography.`,
-      location: destination,
-      category: 'sightseeing',
-      estimatedCost: 100,
-      isIndoor: false,
-      rating: 4.8
-    });
+    // Slot 4: Night Dining (Customized according to food preference)
+    let dinnerTitle = 'Dinner & Regional Cuisine at Beachside Shack';
+    let dinnerDesc = 'Savor authentic regional delicacies and fresh coastal flavours.';
+    let dinnerCost = 800;
 
-    // Night Slot (08:00 PM)
+    if (foodPref === 'Vegetarian' || foodPref === 'Pure Vegetarian') {
+      dinnerTitle = 'Authentic Pure Vegetarian Regional Thali Dinner';
+      dinnerDesc = 'Feast on certified pure vegetarian & Jain-friendly traditional thali preparations.';
+      dinnerCost = 650;
+    } else if (foodPref === 'Fine Dining') {
+      dinnerTitle = 'Chef\'s Table Curated Fine Dining Experience';
+      dinnerDesc = 'Multi-course gourmet culinary tasting with sommelier recommendations.';
+      dinnerCost = 2500;
+    } else if (foodPref === 'Street Food') {
+      dinnerTitle = 'Night Food Bazaar & Street Gastronomy Trail';
+      dinnerDesc = 'Sample famous local street snacks, chaats, and local desserts.';
+      dinnerCost = 450;
+    }
+
     dayActivities.push({
       id: `act-${d}-4`,
-      time: '08:00 PM',
-      title: `Dinner & Local Cuisine at Beachside Shack`,
-      description: `Savor authentic regional delicacies and fresh seafood/curries.`,
+      time: '08:15 PM',
+      title: dinnerTitle,
+      description: dinnerDesc,
       location: destination,
       category: 'food',
-      estimatedCost: 850,
+      estimatedCost: dinnerCost,
       isIndoor: true,
-      rating: 4.7
+      rating: 4.8
     });
 
     itinerary.push({

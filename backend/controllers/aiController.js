@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const { handleAIChat } = require('../services/aiAgent');
 const ChatSession = require('../models/ChatSession');
 const mcpClient = require('../mcp/mcpClient');
@@ -7,14 +8,23 @@ const mcpClient = require('../mcp/mcpClient');
 // @access  Public / Private
 const chatWithAI = async (req, res) => {
   try {
-    const { sessionId, message } = req.body;
+    const { sessionId, message, token } = req.body;
 
     if (!message || !message.trim()) {
       return res.status(400).json({ success: false, message: 'Message cannot be empty.' });
     }
 
     const currentSessionId = sessionId || ('sess-' + Math.random().toString(36).substring(2, 10));
-    const userId = req.user ? req.user._id : null;
+    let userId = req.user ? req.user._id : null;
+
+    if (!userId && token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'travel_ai_super_secret_jwt_key_2026');
+        userId = decoded.id;
+      } catch (e) {
+        // Ignore token decode error
+      }
+    }
 
     const result = await handleAIChat({
       sessionId: currentSessionId,

@@ -46,12 +46,20 @@ const registerUser = async (req, res) => {
     });
 
     if (user) {
+      const token = jwt.sign(
+        { id: user._id },
+        process.env.JWT_SECRET || 'travel_ai_super_secret_jwt_key_2026',
+        { expiresIn: '30d' }
+      );
+
       res.status(201).json({
-        message: 'Registration successful! Please login.',
+        message: 'Registration successful!',
+        token,
         user: {
           _id: user._id,
           name: user.name,
           email: user.email,
+          preferences: user.preferences || {}
         },
       });
     } else {
@@ -89,7 +97,7 @@ const loginUser = async (req, res) => {
     // Generate JWT
     const token = jwt.sign(
       { id: user._id },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'travel_ai_super_secret_jwt_key_2026',
       { expiresIn: '30d' }
     );
 
@@ -99,6 +107,7 @@ const loginUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        preferences: user.preferences || {}
       },
     });
   } catch (error) {
@@ -120,8 +129,43 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+// @desc    Update user travel preferences
+// @route   PUT /api/auth/preferences
+// @access  Private
+const updateUserPreferences = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.preferences = {
+      ...user.preferences,
+      ...req.body
+    };
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Travel preferences updated successfully!',
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        preferences: user.preferences
+      },
+      preferences: user.preferences
+    });
+  } catch (error) {
+    console.error('Update preferences error:', error);
+    res.status(500).json({ message: 'Server error while updating preferences' });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
+  updateUserPreferences
 };

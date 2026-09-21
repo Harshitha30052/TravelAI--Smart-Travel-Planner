@@ -24,6 +24,7 @@ class MCPClient {
     this.registerTool('search_places', travelTools.search_places, 'Find tourist attractions, heritage monuments and sights');
     this.registerTool('get_place_details', travelTools.get_place_details, 'Get detailed information about a specific attraction');
     this.registerTool('search_activities', travelTools.search_activities, 'Find adventure, cultural, relaxation and food activities');
+    this.registerTool('recommend_destinations', travelTools.recommend_destinations, 'Recommend destinations based on preferences and travel style');
 
     // Trip MCP Tools
     this.registerTool('create_trip', tripTools.create_trip, 'Persist a planned trip to the database');
